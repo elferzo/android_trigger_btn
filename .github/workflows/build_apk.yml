@@ -31,11 +31,10 @@ jobs:
           chmod +x setup_project.sh
           bash setup_project.sh
           export ANDROID_HOME=$ANDROID_SDK_ROOT
-          chmod +x gradlew 2>/dev/null || true
           wget -q https://services.gradle.org/distributions/gradle-8.1.1-bin.zip -P /tmp
           unzip -q /tmp/gradle-8.1.1-bin.zip -d /opt/gradle
-          export PATH=$PATH:/opt/gradle/gradle-8.1.1/bin
-          gradle wrapper
+          export PATH=/opt/gradle/gradle-8.1.1/bin:$PATH
+          gradle wrapper --gradle-version=8.1.1
           chmod +x gradlew
           ./gradlew assembleDebug
 
