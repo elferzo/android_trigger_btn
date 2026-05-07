@@ -4,10 +4,10 @@ plugins {
 }
 
 android {
-    namespace "com.example.weeek"
+    namespace "com.example.triggerbtn"
     compileSdk 34
     defaultConfig {
-        applicationId "com.example.weeek"
+        applicationId "com.example.triggerbtn"
         minSdk 26
         targetSdk 34
         versionCode 1

@@ -1,4 +1,4 @@
-package com.example.weeek
+package com.example.triggerbtn
 
 import android.app.AlarmManager
 import android.content.Intent
