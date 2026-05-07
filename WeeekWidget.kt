@@ -22,24 +22,23 @@ class WeeekWidget : AppWidgetProvider() {
         const val ACTION_MIDNIGHT_RESET = "com.example.triggerbtn.MIDNIGHT_RESET"
         const val PREFS_NAME = "WeeekPrefs"
         const val KEY_GREEN  = "is_green"
+        const val KEY_LAST_CLICK = "last_click"
         const val WEBHOOK_URL = "http://178.208.86.99:5000/run"
+        const val DEBOUNCE_MS = 5000L
 
         fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
-            val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val isGreen = prefs.getBoolean(KEY_GREEN, false)
 
             val views = RemoteViews(context.packageName, R.layout.widget_layout)
             val color = if (isGreen) Color.parseColor("#4CAF50") else Color.parseColor("#9E9E9E")
             views.setInt(R.id.btn_root, "setBackgroundColor", color)
 
-            // уникальный requestCode per widget id
             val intent = Intent(context, WeeekWidget::class.java).apply {
                 action = ACTION_BUTTON_CLICK
             }
             val pi = PendingIntent.getBroadcast(
-                context,
-                appWidgetId,
-                intent,
+                context, appWidgetId, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             views.setOnClickPendingIntent(R.id.btn_root, pi)
@@ -86,13 +85,20 @@ class WeeekWidget : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         when (intent.action) {
-            ACTION_BUTTON_CLICK  -> handleButtonClick(context)
+            ACTION_BUTTON_CLICK   -> handleButtonClick(context)
             ACTION_MIDNIGHT_RESET -> handleMidnightReset(context)
         }
     }
 
     private fun handleButtonClick(context: Context) {
-        // Сразу красим серым → "pending" пока ждём ответ
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val lastClick = prefs.getLong(KEY_LAST_CLICK, 0L)
+
+        // дебаунс — игнорируем повторные нажатия в течение 5 сек
+        if (now - lastClick < DEBOUNCE_MS) return
+        prefs.edit().putLong(KEY_LAST_CLICK, now).apply()
+
         thread {
             try {
                 val url = URL(WEBHOOK_URL)
@@ -102,11 +108,9 @@ class WeeekWidget : AppWidgetProvider() {
                 conn.readTimeout = 30000
                 conn.doOutput = false
                 val code = conn.responseCode
-                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 prefs.edit().putBoolean(KEY_GREEN, code == 200).apply()
                 conn.disconnect()
             } catch (e: Exception) {
-                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 prefs.edit().putBoolean(KEY_GREEN, false).apply()
             }
             updateAllWidgets(context)
