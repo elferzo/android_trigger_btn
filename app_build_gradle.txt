@@ -4,6 +4,7 @@ plugins {
 }
 
 android {
+    namespace "com.example.weeek"
     compileSdk 34
     defaultConfig {
         applicationId "com.example.weeek"
