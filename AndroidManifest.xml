@@ -8,40 +8,44 @@
 
     <application
         android:allowBackup="true"
-        android:label="Weeek"
+        android:label="Trigger"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <receiver
-            android:name=".WeeekWidget"
-            android:exported="true">
+        <receiver android:name=".WeeekWidget" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.triggerbtn.BUTTON_CLICK" />
-                <action android:name="com.example.triggerbtn.MIDNIGHT_RESET" />
+                <action android:name="com.example.triggerbtn.WEEEK_CLICK" />
+                <action android:name="com.example.triggerbtn.WEEEK_RESET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_info" />
+                android:resource="@xml/widget_info_weeek" />
         </receiver>
 
-        <receiver
-            android:name=".BootReceiver"
-            android:exported="true">
+        <receiver android:name=".PlaudWidget" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.triggerbtn.PLAUD_CLICK" />
+                <action android:name="com.example.triggerbtn.PLAUD_RESET" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_plaud" />
+        </receiver>
+
+        <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 
     </application>
-
 </manifest>

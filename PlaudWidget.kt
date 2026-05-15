@@ -14,40 +14,40 @@ import java.net.URL
 import java.util.Calendar
 import kotlin.concurrent.thread
 
-class WeeekWidget : AppWidgetProvider() {
+class PlaudWidget : AppWidgetProvider() {
 
     companion object {
-        const val ACTION_BUTTON_CLICK   = "com.example.triggerbtn.WEEEK_CLICK"
-        const val ACTION_MIDNIGHT_RESET = "com.example.triggerbtn.WEEEK_RESET"
+        const val ACTION_BUTTON_CLICK   = "com.example.triggerbtn.PLAUD_CLICK"
+        const val ACTION_MIDNIGHT_RESET = "com.example.triggerbtn.PLAUD_RESET"
         const val PREFS_NAME     = "WeeekPrefs"
-        const val KEY_GREEN      = "weeek_green"
-        const val KEY_LAST_CLICK = "weeek_last_click"
-        const val WEBHOOK_URL    = "http://178.208.86.99:5000/run"
+        const val KEY_GREEN      = "plaud_green"
+        const val KEY_LAST_CLICK = "plaud_last_click"
+        const val WEBHOOK_URL    = "http://178.208.86.99:5000/run_plaud"
         const val DEBOUNCE_MS    = 5000L
 
         fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val prefs   = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val isGreen = prefs.getBoolean(KEY_GREEN, false)
-            val views   = RemoteViews(context.packageName, R.layout.widget_weeek)
+            val views   = RemoteViews(context.packageName, R.layout.widget_plaud)
             val color   = if (isGreen) Color.parseColor("#4CAF50") else Color.parseColor("#9E9E9E")
-            views.setInt(R.id.btn_root, "setBackgroundColor", color)
-            val intent = Intent(context, WeeekWidget::class.java).apply { action = ACTION_BUTTON_CLICK }
-            val pi = PendingIntent.getBroadcast(context, appWidgetId, intent,
+            views.setInt(R.id.btn_root_plaud, "setBackgroundColor", color)
+            val intent = Intent(context, PlaudWidget::class.java).apply { action = ACTION_BUTTON_CLICK }
+            val pi = PendingIntent.getBroadcast(context, appWidgetId + 1000, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            views.setOnClickPendingIntent(R.id.btn_root, pi)
+            views.setOnClickPendingIntent(R.id.btn_root_plaud, pi)
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
 
         fun updateAllWidgets(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
-            val ids = manager.getAppWidgetIds(android.content.ComponentName(context, WeeekWidget::class.java))
+            val ids = manager.getAppWidgetIds(android.content.ComponentName(context, PlaudWidget::class.java))
             ids.forEach { updateWidget(context, manager, it) }
         }
 
         fun scheduleMidnightReset(context: Context) {
             val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val intent = Intent(context, WeeekWidget::class.java).apply { action = ACTION_MIDNIGHT_RESET }
-            val pi = PendingIntent.getBroadcast(context, 10, intent,
+            val intent = Intent(context, PlaudWidget::class.java).apply { action = ACTION_MIDNIGHT_RESET }
+            val pi = PendingIntent.getBroadcast(context, 20, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             val cal = Calendar.getInstance().apply {
                 add(Calendar.DAY_OF_YEAR, 1)
@@ -81,7 +81,7 @@ class WeeekWidget : AppWidgetProvider() {
         thread {
             try {
                 val conn = URL(WEBHOOK_URL).openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"; conn.connectTimeout = 10000; conn.readTimeout = 30000
+                conn.requestMethod = "POST"; conn.connectTimeout = 10000; conn.readTimeout = 60000
                 val code = conn.responseCode
                 prefs.edit().putBoolean(KEY_GREEN, code == 200).apply()
                 conn.disconnect()

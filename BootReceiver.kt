@@ -9,6 +9,8 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             WeeekWidget.scheduleMidnightReset(context)
             WeeekWidget.updateAllWidgets(context)
+            PlaudWidget.scheduleMidnightReset(context)
+            PlaudWidget.updateAllWidgets(context)
         }
     }
 }
