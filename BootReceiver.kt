@@ -8,9 +8,9 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             WeeekWidget.scheduleMidnightReset(context)
-            WeeekWidget.updateAllWidgets(context)
+            WeeekWidget.setColor(context, false)
             PlaudWidget.scheduleMidnightReset(context)
-            PlaudWidget.updateAllWidgets(context)
+            PlaudWidget.setColor(context, false)
         }
     }
 }
