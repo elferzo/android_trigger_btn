@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.widget.RemoteViews
 import java.net.HttpURLConnection
 import java.net.URL
@@ -25,23 +27,21 @@ class PlaudWidget : AppWidgetProvider() {
         const val WEBHOOK_URL    = "http://178.208.86.99:5000/run_plaud"
         const val DEBOUNCE_MS    = 5000L
 
-        fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
-            val prefs   = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val isGreen = prefs.getBoolean(KEY_GREEN, false)
-            val views   = RemoteViews(context.packageName, R.layout.widget_plaud)
-            val color   = if (isGreen) Color.parseColor("#4CAF50") else Color.parseColor("#9E9E9E")
-            views.setInt(R.id.btn_root_plaud, "setBackgroundColor", color)
-            val intent = Intent(context, PlaudWidget::class.java).apply { action = ACTION_BUTTON_CLICK }
-            val pi = PendingIntent.getBroadcast(context, appWidgetId + 1000, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            views.setOnClickPendingIntent(R.id.btn_root_plaud, pi)
-            appWidgetManager.updateAppWidget(appWidgetId, views)
-        }
-
-        fun updateAllWidgets(context: Context) {
+        fun setColor(context: Context, green: Boolean) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_GREEN, green).apply()
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(android.content.ComponentName(context, PlaudWidget::class.java))
-            ids.forEach { updateWidget(context, manager, it) }
+            val color = if (green) Color.parseColor("#4CAF50") else Color.parseColor("#9E9E9E")
+            for (id in ids) {
+                val views = RemoteViews(context.packageName, R.layout.widget_plaud)
+                views.setInt(R.id.btn_root_plaud, "setBackgroundColor", color)
+                val intent = Intent(context, PlaudWidget::class.java).apply { action = ACTION_BUTTON_CLICK }
+                val pi = PendingIntent.getBroadcast(context, id + 1000, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(R.id.btn_root_plaud, pi)
+                manager.updateAppWidget(id, views)
+            }
         }
 
         fun scheduleMidnightReset(context: Context) {
@@ -61,7 +61,18 @@ class PlaudWidget : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        appWidgetIds.forEach { updateWidget(context, appWidgetManager, it) }
+        appWidgetIds.forEach { id ->
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val isGreen = prefs.getBoolean(KEY_GREEN, false)
+            val views = RemoteViews(context.packageName, R.layout.widget_plaud)
+            views.setInt(R.id.btn_root_plaud, "setBackgroundColor",
+                if (isGreen) Color.parseColor("#4CAF50") else Color.parseColor("#9E9E9E"))
+            val intent = Intent(context, PlaudWidget::class.java).apply { action = ACTION_BUTTON_CLICK }
+            val pi = PendingIntent.getBroadcast(context, id + 1000, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            views.setOnClickPendingIntent(R.id.btn_root_plaud, pi)
+            appWidgetManager.updateAppWidget(id, views)
+        }
         scheduleMidnightReset(context)
     }
 
@@ -78,21 +89,26 @@ class PlaudWidget : AppWidgetProvider() {
         val now = System.currentTimeMillis()
         if (now - prefs.getLong(KEY_LAST_CLICK, 0L) < DEBOUNCE_MS) return
         prefs.edit().putLong(KEY_LAST_CLICK, now).apply()
+
+        // Сразу зелёная
+        Handler(Looper.getMainLooper()).post { setColor(context, true) }
+
         thread {
             try {
                 val conn = URL(WEBHOOK_URL).openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"; conn.connectTimeout = 10000; conn.readTimeout = 60000
-                val code = conn.responseCode
-                prefs.edit().putBoolean(KEY_GREEN, code == 200).apply()
+                conn.requestMethod = "POST"
+                conn.connectTimeout = 10000
+                conn.readTimeout = 60000
+                conn.responseCode
                 conn.disconnect()
-            } catch (e: Exception) { prefs.edit().putBoolean(KEY_GREEN, false).apply() }
-            updateAllWidgets(context)
+            } catch (e: Exception) { }
+            // После завершения — серая через main thread
+            Handler(Looper.getMainLooper()).post { setColor(context, false) }
         }
     }
 
     private fun handleMidnightReset(context: Context) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putBoolean(KEY_GREEN, false).apply()
-        updateAllWidgets(context)
+        setColor(context, false)
         scheduleMidnightReset(context)
     }
 }
